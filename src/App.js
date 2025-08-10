@@ -87,7 +87,7 @@
                             </div>
                             <div class="flex gap-1">
                                 <button class="bg-green-600 text-white px-2 py-1 rounded text-xs font-medium">Used</button>
-                                <button class="bg-gray-500 text-white px-2 py-1 rounded text-xs font-medium">Edit</button>
+                                <button class="edit-btn bg-gray-500 text-white px-2 py-1 rounded text-xs font-medium">Edit</button>
                             </div>
                         </div>
                         <div class="mt-2 p-1 bg-orange-50 rounded text-xs text-orange-800">
@@ -110,7 +110,7 @@
                             </div>
                             <div class="flex gap-1">
                                 <button class="bg-green-600 text-white px-2 py-1 rounded text-xs font-medium">Used</button>
-                                <button class="bg-gray-500 text-white px-2 py-1 rounded text-xs font-medium">Edit</button>
+                                <button class="edit-btn bg-gray-500 text-white px-2 py-1 rounded text-xs font-medium">Edit</button>
                             </div>
                         </div>
                     </div>
@@ -130,7 +130,7 @@
                             </div>
                             <div class="flex gap-1">
                                 <button class="bg-green-600 text-white px-2 py-1 rounded text-xs font-medium">Used</button>
-                                <button class="bg-gray-500 text-white px-2 py-1 rounded text-xs font-medium">Edit</button>
+                                <button class="edit-btn bg-gray-500 text-white px-2 py-1 rounded text-xs font-medium">Edit</button>
                             </div>
                         </div>
                     </div>
@@ -153,6 +153,140 @@
                         </svg>
                         <span class="font-medium">View Kitchen</span>
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Item Modal (Hidden initially) -->
+        <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl max-w-md w-full max-h-screen overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Edit Item</h2>
+                        <button id="close-modal" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Item Name -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Item Name</label>
+                        <div class="relative">
+                            <input type="text" value="Baby Spinach" class="w-full p-4 border border-gray-200 rounded-2xl text-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                <button class="p-1 text-gray-400 hover:text-gray-600">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Price -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Price</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 text-lg">$</span>
+                            <input type="number" value="3.49" step="0.01" class="w-full pl-8 pr-12 py-4 border border-gray-200 rounded-2xl text-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <div class="absolute right-3 top-1/2 transform -translate-y-1/2 flex flex-col">
+                                <button class="p-1 text-gray-400 hover:text-gray-600">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+                                    </svg>
+                                </button>
+                                <button class="p-1 text-gray-400 hover:text-gray-600">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Expiry Date -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Expiry Date</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <input type="date" value="2025-08-13" class="w-full p-4 border border-gray-200 rounded-2xl text-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <button class="bg-blue-50 border border-blue-200 text-blue-700 p-4 rounded-2xl font-medium hover:bg-blue-100">
+                                📅 Smart Guess
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">💡 We'll adjust this automatically when you mark it as opened</p>
+                    </div>
+
+                    <!-- Location -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button class="bg-blue-100 border-2 border-blue-500 text-blue-700 p-3 rounded-xl font-medium flex flex-col items-center gap-1">
+                                <span class="text-lg">🗄️</span>
+                                <span class="text-sm">Fridge</span>
+                            </button>
+                            <button class="bg-gray-50 border border-gray-200 text-gray-700 p-3 rounded-xl font-medium flex flex-col items-center gap-1 hover:bg-gray-100">
+                                <span class="text-lg">📦</span>
+                                <span class="text-sm">Pantry</span>
+                            </button>
+                            <button class="bg-gray-50 border border-gray-200 text-gray-700 p-3 rounded-xl font-medium flex flex-col items-center gap-1 hover:bg-gray-100">
+                                <span class="text-lg">🧊</span>
+                                <span class="text-sm">Freezer</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Category -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button class="bg-green-100 border-2 border-green-500 text-green-700 p-3 rounded-xl font-medium flex items-center gap-2">
+                                <span class="text-lg">🥬</span>
+                                <span class="text-sm">Vegetables</span>
+                            </button>
+                            <button class="bg-gray-50 border border-gray-200 text-gray-700 p-3 rounded-xl font-medium flex items-center gap-2 hover:bg-gray-100">
+                                <span class="text-lg">🍎</span>
+                                <span class="text-sm">Fruits</span>
+                            </button>
+                            <button class="bg-gray-50 border border-gray-200 text-gray-700 p-3 rounded-xl font-medium flex items-center gap-2 hover:bg-gray-100">
+                                <span class="text-lg">🥛</span>
+                                <span class="text-sm">Dairy</span>
+                            </button>
+                            <button class="bg-gray-50 border border-gray-200 text-gray-700 p-3 rounded-xl font-medium flex items-center gap-2 hover:bg-gray-100">
+                                <span class="text-lg">🥩</span>
+                                <span class="text-sm">Meat</span>
+                            </button>
+                        </div>
+                        <button class="w-full mt-2 bg-gray-50 border border-gray-200 text-gray-700 p-3 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-gray-100">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                            </svg>
+                            <span class="text-sm">More Categories</span>
+                        </button>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-3">
+                        <button id="cancel-edit" class="flex-1 bg-gray-100 text-gray-700 py-4 rounded-2xl font-semibold hover:bg-gray-200">
+                            Cancel
+                        </button>
+                        <button class="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-semibold hover:bg-blue-700">
+                            Update Item
+                        </button>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <div class="flex gap-3">
+                            <button class="flex-1 bg-red-50 text-red-700 py-3 rounded-xl font-medium hover:bg-red-100">
+                                🗑️ Mark as Wasted
+                            </button>
+                            <button class="flex-1 bg-green-50 text-green-700 py-3 rounded-xl font-medium hover:bg-green-100">
+                                ✅ Mark as Used
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -215,7 +349,7 @@
                             </div>
                             <div class="flex gap-1">
                                 <button class="bg-green-600 text-white px-2 py-1 rounded text-xs">Used</button>
-                                <button class="bg-gray-500 text-white px-2 py-1 rounded text-xs">Edit</button>
+                                <button class="edit-btn bg-gray-500 text-white px-2 py-1 rounded text-xs">Edit</button>
                             </div>
                         </div>
                     </div>
@@ -287,6 +421,33 @@
 
         document.getElementById('view-kitchen-btn').addEventListener('click', function() {
             document.getElementById('kitchen-tab').click();
+        });
+
+        // Edit modal functionality
+        const editModal = document.getElementById('edit-modal');
+        const editBtns = document.querySelectorAll('.edit-btn');
+        const closeModal = document.getElementById('close-modal');
+        const cancelEdit = document.getElementById('cancel-edit');
+
+        editBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                editModal.classList.remove('hidden');
+            });
+        });
+
+        closeModal.addEventListener('click', function() {
+            editModal.classList.add('hidden');
+        });
+
+        cancelEdit.addEventListener('click', function() {
+            editModal.classList.add('hidden');
+        });
+
+        // Close modal when clicking outside
+        editModal.addEventListener('click', function(e) {
+            if (e.target === editModal) {
+                editModal.classList.add('hidden');
+            }
         });
     </script>
 </body>
