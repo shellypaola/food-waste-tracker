@@ -134,14 +134,11 @@ const FoodWasteApp = () => {
 
   const handleItemClick = (item, action) => {
     if (action === 'use') {
-      // Show usage percentage modal
       setSelectedItem(item);
       setShowUsageModal(true);
     } else if (action === 'open') {
-      // Just mark as opened for unopened pantry items
       markAsOpened(item);
     } else if (action === 'edit') {
-      // Show edit modal
       setEditingItem(item);
       setShowEditModal(true);
     }
@@ -158,6 +155,8 @@ const FoodWasteApp = () => {
       setEditingItem(null);
     }
   };
+
+  const markAsOpened = (item) => {
     setItems(items.map(i => 
       i.id === item.id 
         ? { ...i, status: 'opened', openedDate: new Date().toISOString().split('T')[0] }
@@ -172,10 +171,8 @@ const FoodWasteApp = () => {
     const remainingPercentage = selectedItem.remainingPercentage - percentage;
     
     if (remainingPercentage <= 0) {
-      // Item fully used - remove it
       setItems(items.filter(i => i.id !== selectedItem.id));
     } else {
-      // Item partially used - update it
       setItems(items.map(i => 
         i.id === selectedItem.id 
           ? { 
@@ -188,7 +185,6 @@ const FoodWasteApp = () => {
       ));
     }
     
-    // Update stats
     setWasteStats(prev => ({
       ...prev,
       monthlyValueRecovered: prev.monthlyValueRecovered + usedValue,
@@ -268,7 +264,6 @@ const FoodWasteApp = () => {
             </div>
           </div>
           
-          {/* Warning messages */}
           {canBeOpened && (
             <div className="mt-2 p-1 bg-blue-50 rounded text-xs text-blue-800">
               ⚠️ Expiry date will change once opened
@@ -756,3 +751,4 @@ const FoodWasteApp = () => {
 };
 
 export default FoodWasteApp;
+
