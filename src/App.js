@@ -1,754 +1,293 @@
-import React, { useState } from 'react';
-import { Camera, Plus, AlertTriangle, Package, Refrigerator, Scan } from 'lucide-react';
-
-const FoodWasteApp = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [items, setItems] = useState([
-    { 
-      id: 1, 
-      name: 'Greek Yogurt', 
-      location: 'fridge', 
-      expiryDate: '2025-08-12', 
-      category: 'dairy', 
-      price: 5.99,
-      status: 'opened',
-      openedDate: '2025-08-10',
-      openedShelfLife: 7,
-      daysUntilExpiry: 2,
-      remainingPercentage: 100
-    },
-    { 
-      id: 2, 
-      name: 'Chicken Breast', 
-      location: 'fridge', 
-      expiryDate: '2025-08-13', 
-      category: 'meat', 
-      price: 12.99,
-      status: 'unopened',
-      daysUntilExpiry: 3,
-      remainingPercentage: 100
-    },
-    { 
-      id: 3, 
-      name: 'Baby Spinach', 
-      location: 'fridge', 
-      expiryDate: '2025-08-13', 
-      category: 'vegetables', 
-      price: 3.49,
-      status: 'unopened',
-      daysUntilExpiry: 3,
-      remainingPercentage: 100
-    },
-    { 
-      id: 4, 
-      name: 'Pasta Sauce (Jar)', 
-      location: 'pantry', 
-      expiryDate: '2026-06-15', 
-      category: 'condiments', 
-      price: 3.99,
-      status: 'unopened',
-      daysUntilExpiry: 300,
-      remainingPercentage: 100
-    }
-  ]);
-
-  const [wasteStats, setWasteStats] = useState({
-    monthlyValueRecovered: 47.50,
-    monthlyWaste: 14.47,
-    totalItemsUsed: 15,
-    totalItemsWasted: 3
-  });
-
-  const [showBarcodeModal, setShowBarcodeModal] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showUsageModal, setShowUsageModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [isScanning, setIsScanning] = useState(false);
-  const [foundProduct, setFoundProduct] = useState(null);
-  const [newItem, setNewItem] = useState({
-    name: '', location: 'fridge', expiryDate: '', category: 'dairy', price: ''
-  });
-
-  // Helper functions
-  const isFreshProduce = (category) => {
-    return ['fruits', 'vegetables', 'dairy', 'meat'].includes(category);
-  };
-
-  const isPantryItem = (category) => {
-    return ['canned', 'condiments', 'grains', 'beverages'].includes(category);
-  };
-
-  const getStatusColor = (days) => {
-    if (days <= 1) return 'bg-red-50 border-red-200';
-    if (days <= 3) return 'bg-orange-50 border-orange-200';
-    return 'bg-green-50 border-green-200';
-  };
-
-  const getPercentageColor = (percentage) => {
-    if (percentage >= 75) return '🟢';
-    if (percentage >= 50) return '🟡';
-    if (percentage >= 25) return '🟠';
-    return '🔴';
-  };
-
-  const simulateBarcodeSearch = async () => {
-    setIsScanning(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const mockProduct = {
-      product_name: "Organic Whole Milk",
-      brands: "Happy Farms"
-    };
-    
-    setFoundProduct(mockProduct);
-    setIsScanning(false);
-    
-    setNewItem({
-      name: `${mockProduct.brands} ${mockProduct.product_name}`,
-      category: 'dairy',
-      location: 'fridge',
-      expiryDate: '',
-      price: ''
-    });
-  };
-
-  const addItem = () => {
-    if (newItem.name && newItem.expiryDate && newItem.price) {
-      const item = {
-        id: Date.now(),
-        ...newItem,
-        price: parseFloat(newItem.price),
-        status: 'unopened',
-        daysUntilExpiry: 10,
-        remainingPercentage: 100
-      };
-      
-      setItems([...items, item]);
-      setNewItem({ name: '', location: 'fridge', expiryDate: '', category: 'dairy', price: '' });
-      setShowAddModal(false);
-      setFoundProduct(null);
-    }
-  };
-
-  const handleItemClick = (item, action) => {
-    if (action === 'use') {
-      setSelectedItem(item);
-      setShowUsageModal(true);
-    } else if (action === 'open') {
-      markAsOpened(item);
-    } else if (action === 'edit') {
-      setEditingItem(item);
-      setShowEditModal(true);
-    }
-  };
-
-  const updateItem = () => {
-    if (editingItem && editingItem.name && editingItem.expiryDate && editingItem.price) {
-      setItems(items.map(i => 
-        i.id === editingItem.id 
-          ? { ...i, ...editingItem, price: parseFloat(editingItem.price) }
-          : i
-      ));
-      setShowEditModal(false);
-      setEditingItem(null);
-    }
-  };
-
-  const markAsOpened = (item) => {
-    setItems(items.map(i => 
-      i.id === item.id 
-        ? { ...i, status: 'opened', openedDate: new Date().toISOString().split('T')[0] }
-        : i
-    ));
-  };
-
-  const handleUsageSelection = (percentage) => {
-    if (!selectedItem) return;
-    
-    const usedValue = (selectedItem.price * selectedItem.remainingPercentage / 100) * (percentage / 100);
-    const remainingPercentage = selectedItem.remainingPercentage - percentage;
-    
-    if (remainingPercentage <= 0) {
-      setItems(items.filter(i => i.id !== selectedItem.id));
-    } else {
-      setItems(items.map(i => 
-        i.id === selectedItem.id 
-          ? { 
-              ...i, 
-              remainingPercentage,
-              name: `${i.name.split(' (')[0]} (${remainingPercentage}% left)`,
-              price: (selectedItem.price * remainingPercentage / 100)
-            }
-          : i
-      ));
-    }
-    
-    setWasteStats(prev => ({
-      ...prev,
-      monthlyValueRecovered: prev.monthlyValueRecovered + usedValue,
-      totalItemsUsed: prev.totalItemsUsed + (percentage === 100 ? 1 : 0.25)
-    }));
-    
-    setShowUsageModal(false);
-    setSelectedItem(null);
-  };
-
-  const SwipeableItemCard = ({ item, onItemClick, showOpenedWarning = true }) => {
-    const freshProduce = isFreshProduce(item.category);
-    const canBeOpened = isPantryItem(item.category) && item.status === 'unopened';
-    const canShowUsage = freshProduce || item.status === 'opened';
-
-    return (
-      <div className="relative overflow-hidden rounded-xl">
-        <div className={`relative bg-white p-3 border-2 ${getStatusColor(item.daysUntilExpiry)} transition-colors`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 flex-1">
-              <div className="text-xl relative">
-                {item.category === 'dairy' && '🥛'}
-                {item.category === 'vegetables' && '🥬'}
-                {item.category === 'meat' && '🥩'}
-                {item.category === 'fruits' && '🍎'}
-                {item.category === 'condiments' && '🍯'}
-                {item.category === 'canned' && '🥫'}
-                {item.category === 'grains' && '🍞'}
-                {item.category === 'beverages' && '🥤'}
-                
-                <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full">
-                  {item.status === 'opened' ? (
-                    <div className="w-2 h-2 bg-orange-500 rounded-full" title="Opened"></div>
-                  ) : (
-                    <div className="w-2 h-2 bg-gray-400 rounded-full" title="Unopened"></div>
-                  )}
-                </div>
-                
-                {item.remainingPercentage < 100 && (
-                  <div className="absolute -bottom-1 -right-1 text-xs">
-                    {getPercentageColor(item.remainingPercentage)}
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="font-medium text-gray-900 text-sm truncate">{item.name}</h4>
-                <div className="text-xs text-gray-600">
-                  {item.daysUntilExpiry}d left • ${item.price.toFixed(2)}
-                  {item.remainingPercentage < 100 && ` • ${item.remainingPercentage}% left`}
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex gap-1 ml-2">
-              {canBeOpened && (
-                <button
-                  onClick={() => onItemClick(item, 'open')}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium"
-                >
-                  Open
-                </button>
-              )}
-              {canShowUsage && (
-                <button
-                  onClick={() => onItemClick(item, 'use')}
-                  className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium"
-                >
-                  Used
-                </button>
-              )}
-              <button
-                onClick={() => onItemClick(item, 'edit')}
-                className="bg-gray-500 hover:bg-gray-600 text-white px-2 py-1 rounded text-xs font-medium"
-              >
-                Edit
-              </button>
-            </div>
-          </div>
-          
-          {canBeOpened && (
-            <div className="mt-2 p-1 bg-blue-50 rounded text-xs text-blue-800">
-              ⚠️ Expiry date will change once opened
-            </div>
-          )}
-          {item.status === 'opened' && showOpenedWarning && (
-            <div className="mt-2 p-1 bg-orange-50 rounded text-xs text-orange-800">
-              ⚠️ Opened items expire faster!
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const totalValue = items.reduce((sum, item) => sum + item.price, 0);
-  const atRiskItems = items.filter(item => item.daysUntilExpiry <= 3);
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-md mx-auto bg-white min-h-screen">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 pb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">FreshKeeper</h1>
-              <p className="text-blue-100">Smart opened item tracking</p>
-            </div>
-            <div className="text-right">
-              <div className="text-lg font-bold">${totalValue.toFixed(0)}</div>
-              <div className="text-blue-100 text-sm">total value</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="bg-white border-b border-gray-200 px-6">
-          <div className="flex">
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`flex-1 py-4 text-center font-medium border-b-2 transition-colors ${
-                activeTab === 'dashboard'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500'
-              }`}
-            >
-              💰 Dashboard
-            </button>
-            <button
-              onClick={() => setActiveTab('inventory')}
-              className={`flex-1 py-4 text-center font-medium border-b-2 transition-colors ${
-                activeTab === 'inventory'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500'
-              }`}
-            >
-              📦 Kitchen ({items.length})
-            </button>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
-          {activeTab === 'dashboard' ? (
-            <div className="space-y-6">
-              {/* Stats */}
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
-                  <div className="text-blue-600 text-sm font-medium mb-1">Inventory</div>
-                  <div className="text-2xl font-bold text-blue-900">${totalValue.toFixed(2)}</div>
-                  <div className="text-blue-700 text-xs">Current value</div>
-                </div>
-                <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
-                  <div className="text-red-600 text-sm font-medium mb-1">Wasted</div>
-                  <div className="text-2xl font-bold text-red-900">${wasteStats.monthlyWaste.toFixed(2)}</div>
-                  <div className="text-red-700 text-xs">This month</div>
-                </div>
-                <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4">
-                  <div className="text-orange-600 text-sm font-medium mb-1">At Risk</div>
-                  <div className="text-2xl font-bold text-orange-900">${atRiskItems.reduce((sum, item) => sum + item.price, 0).toFixed(2)}</div>
-                  <div className="text-orange-700 text-xs">About to expire</div>
-                </div>
-              </div>
-
-              {/* At Risk Alert */}
-              {atRiskItems.length > 0 && (
-                <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-2xl p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                      <AlertTriangle className="w-5 h-5 text-purple-600" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-gray-900">Expiring Soon</div>
-                      <div className="text-gray-600 text-sm">
-                        {atRiskItems.length} items need attention
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Use These Now */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Use These Now</h3>
-                <div className="space-y-4">
-                  {atRiskItems.slice(0, 3).map(item => (
-                    <SwipeableItemCard 
-                      key={item.id} 
-                      item={item} 
-                      onItemClick={handleItemClick}
-                      showOpenedWarning={false}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Quick Add */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Add</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setShowBarcodeModal(true)}
-                    className="bg-green-600 hover:bg-green-700 text-white p-4 rounded-xl flex items-center justify-center gap-2"
-                  >
-                    <Scan className="w-5 h-5" />
-                    <span className="font-medium">Scan Item</span>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('inventory')}
-                    className="bg-blue-100 hover:bg-blue-200 text-blue-900 p-4 rounded-xl flex items-center justify-center gap-2"
-                  >
-                    <Package className="w-5 h-5" />
-                    <span className="font-medium">View Kitchen</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            // Kitchen Tab
-            <div className="space-y-6">
-              {/* Add Items */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Add Food</h3>
-                <div className="grid grid-cols-3 gap-3">
-                  <button className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl flex flex-col items-center justify-center gap-1">
-                    <Camera className="w-4 h-4" />
-                    <span className="text-xs font-medium">Receipt</span>
-                  </button>
-                  <button
-                    onClick={() => setShowBarcodeModal(true)}
-                    className="bg-green-600 hover:bg-green-700 text-white p-3 rounded-xl flex flex-col items-center justify-center gap-1"
-                  >
-                    <Scan className="w-4 h-4" />
-                    <span className="text-xs font-medium">Barcode</span>
-                  </button>
-                  <button
-                    onClick={() => setShowAddModal(true)}
-                    className="bg-gray-100 hover:bg-gray-200 text-gray-900 p-3 rounded-xl flex flex-col items-center justify-center gap-1"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span className="text-xs font-medium">Manual</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Fridge Section */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-6 border-b border-gray-100">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <Refrigerator className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">Fridge</h3>
-                      <p className="text-sm text-gray-500">{items.filter(i => i.location === 'fridge').length} items</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="p-6 space-y-3">
-                  {items.filter(item => item.location === 'fridge').map(item => (
-                    <SwipeableItemCard 
-                      key={item.id} 
-                      item={item} 
-                      onItemClick={handleItemClick}
-                      showOpenedWarning={true}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Pantry Section */}
-              {items.filter(item => item.location === 'pantry').length > 0 && (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                  <div className="p-6 border-b border-gray-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <Package className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Pantry</h3>
-                        <p className="text-sm text-gray-500">{items.filter(i => i.location === 'pantry').length} items</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="p-6 space-y-3">
-                    {items.filter(item => item.location === 'pantry').map(item => (
-                      <SwipeableItemCard 
-                        key={item.id} 
-                        item={item} 
-                        onItemClick={handleItemClick}
-                        showOpenedWarning={true}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Edit Item Modal */}
-        {showEditModal && editingItem && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
-              <h3 className="text-xl font-bold mb-6">Edit Item</h3>
-              
-              <div className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Item name"
-                  value={editingItem.name}
-                  onChange={(e) => setEditingItem({...editingItem, name: e.target.value})}
-                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="Price ($)"
-                  value={editingItem.price}
-                  onChange={(e) => setEditingItem({...editingItem, price: e.target.value})}
-                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshKeeper - Smart Food Waste Prevention</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="max-w-md mx-auto bg-white min-h-screen">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 pb-8">
+            <div class="flex items-center justify-between">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
-                  <input
-                    type="date"
-                    value={editingItem.expiryDate}
-                    onChange={(e) => setEditingItem({...editingItem, expiryDate: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                    <h1 class="text-2xl font-bold">FreshKeeper</h1>
+                    <p class="text-blue-100">Smart opened item tracking</p>
                 </div>
-                <select
-                  value={editingItem.location}
-                  onChange={(e) => setEditingItem({...editingItem, location: e.target.value})}
-                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="fridge">Fridge</option>
-                  <option value="freezer">Freezer</option>
-                  <option value="pantry">Pantry</option>
-                </select>
-                <select
-                  value={editingItem.category}
-                  onChange={(e) => setEditingItem({...editingItem, category: e.target.value})}
-                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="dairy">Dairy</option>
-                  <option value="vegetables">Vegetables</option>
-                  <option value="fruits">Fruits</option>
-                  <option value="meat">Meat</option>
-                  <option value="grains">Grains</option>
-                  <option value="condiments">Condiments</option>
-                  <option value="canned">Canned</option>
-                  <option value="beverages">Beverages</option>
-                </select>
-              </div>
-              
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => {
-                    setShowEditModal(false);
-                    setEditingItem(null);
-                  }}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={updateItem}
-                  className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium"
-                >
-                  Update Item
-                </button>
-              </div>
+                <div class="text-right">
+                    <div class="text-lg font-bold">$27</div>
+                    <div class="text-blue-100 text-sm">total value</div>
+                </div>
             </div>
-          </div>
-        )}
+        </div>
 
-        {/* Usage Percentage Modal */}
-        {showUsageModal && selectedItem && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
-              <h3 className="text-xl font-bold mb-2">Used {selectedItem.name}</h3>
-              <p className="text-gray-600 text-sm mb-6">How much did you use?</p>
-              
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                {[25, 50, 75, 100].map(percentage => {
-                  const usedValue = (selectedItem.price * selectedItem.remainingPercentage / 100) * (percentage / 100);
-                  const remaining = selectedItem.remainingPercentage - percentage;
-                  
-                  return (
-                    <button
-                      key={percentage}
-                      onClick={() => handleUsageSelection(percentage)}
-                      className={`p-4 rounded-xl border-2 transition-colors ${
-                        percentage === 100 
-                          ? 'border-blue-500 bg-blue-50 text-blue-900' 
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="text-2xl font-bold">{percentage}%</div>
-                      <div className="text-xs text-gray-600">
-                        ${usedValue.toFixed(2)} used
-                      </div>
-                      {remaining > 0 && (
-                        <div className="text-xs text-gray-500">
-                          {remaining}% left
+        <!-- Tabs -->
+        <div class="bg-white border-b border-gray-200 px-6">
+            <div class="flex">
+                <button id="dashboard-tab" class="flex-1 py-4 text-center font-medium border-b-2 border-blue-500 text-blue-600">
+                    💰 Dashboard
+                </button>
+                <button id="kitchen-tab" class="flex-1 py-4 text-center font-medium border-b-2 border-transparent text-gray-500">
+                    📦 Kitchen (4)
+                </button>
+            </div>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div id="dashboard-content" class="p-6">
+            <!-- Stats -->
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+                    <div class="text-blue-600 text-sm font-medium mb-1">Inventory</div>
+                    <div class="text-2xl font-bold text-blue-900">$27.47</div>
+                    <div class="text-blue-700 text-xs">Current value</div>
+                </div>
+                <div class="bg-red-50 border border-red-200 rounded-2xl p-4">
+                    <div class="text-red-600 text-sm font-medium mb-1">Wasted</div>
+                    <div class="text-2xl font-bold text-red-900">$14.47</div>
+                    <div class="text-red-700 text-xs">This month</div>
+                </div>
+                <div class="bg-orange-50 border border-orange-200 rounded-2xl p-4">
+                    <div class="text-orange-600 text-sm font-medium mb-1">At Risk</div>
+                    <div class="text-2xl font-bold text-orange-900">$8.20</div>
+                    <div class="text-orange-700 text-xs">About to expire</div>
+                </div>
+            </div>
+
+            <!-- At Risk Alert -->
+            <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-2xl p-4 mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                        ⚠️
+                    </div>
+                    <div>
+                        <div class="font-semibold text-gray-900">Expiring Soon</div>
+                        <div class="text-gray-600 text-sm">3 items need attention</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Use These Now -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Use These Now</h3>
+                <div class="space-y-3">
+                    <!-- Greek Yogurt -->
+                    <div class="relative bg-white p-3 border-2 border-orange-200 bg-orange-50 rounded-xl">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3 flex-1">
+                                <div class="text-xl relative">
+                                    🥛
+                                    <div class="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full"></div>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-medium text-gray-900 text-sm">Greek Yogurt</h4>
+                                    <div class="text-xs text-gray-600">2d left • $5.99</div>
+                                </div>
+                            </div>
+                            <div class="flex gap-1">
+                                <button class="bg-green-600 text-white px-2 py-1 rounded text-xs font-medium">Used</button>
+                                <button class="bg-gray-500 text-white px-2 py-1 rounded text-xs font-medium">Edit</button>
+                            </div>
                         </div>
-                      )}
+                        <div class="mt-2 p-1 bg-orange-50 rounded text-xs text-orange-800">
+                            ⚠️ Opened items expire faster!
+                        </div>
+                    </div>
+
+                    <!-- Chicken Breast -->
+                    <div class="relative bg-white p-3 border-2 border-orange-200 bg-orange-50 rounded-xl">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3 flex-1">
+                                <div class="text-xl relative">
+                                    🥩
+                                    <div class="absolute -top-1 -right-1 w-2 h-2 bg-gray-400 rounded-full"></div>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-medium text-gray-900 text-sm">Chicken Breast</h4>
+                                    <div class="text-xs text-gray-600">3d left • $12.99</div>
+                                </div>
+                            </div>
+                            <div class="flex gap-1">
+                                <button class="bg-green-600 text-white px-2 py-1 rounded text-xs font-medium">Used</button>
+                                <button class="bg-gray-500 text-white px-2 py-1 rounded text-xs font-medium">Edit</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Baby Spinach -->
+                    <div class="relative bg-white p-3 border-2 border-orange-200 bg-orange-50 rounded-xl">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3 flex-1">
+                                <div class="text-xl relative">
+                                    🥬
+                                    <div class="absolute -top-1 -right-1 w-2 h-2 bg-gray-400 rounded-full"></div>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-medium text-gray-900 text-sm">Baby Spinach</h4>
+                                    <div class="text-xs text-gray-600">3d left • $3.49</div>
+                                </div>
+                            </div>
+                            <div class="flex gap-1">
+                                <button class="bg-green-600 text-white px-2 py-1 rounded text-xs font-medium">Used</button>
+                                <button class="bg-gray-500 text-white px-2 py-1 rounded text-xs font-medium">Edit</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Add -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Add</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <button class="bg-green-600 hover:bg-green-700 text-white p-4 rounded-xl flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M12 12h.01m4.01 0h.01M12 12h4.01"/>
+                        </svg>
+                        <span class="font-medium">Scan Item</span>
                     </button>
-                  );
-                })}
-              </div>
-              
-              <button
-                onClick={() => {
-                  setShowUsageModal(false);
-                  setSelectedItem(null);
-                }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium"
-              >
-                Cancel
-              </button>
+                    <button id="view-kitchen-btn" class="bg-blue-100 hover:bg-blue-200 text-blue-900 p-4 rounded-xl flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"/>
+                        </svg>
+                        <span class="font-medium">View Kitchen</span>
+                    </button>
+                </div>
             </div>
-          </div>
-        )}
+        </div>
 
-        {/* Barcode Scanner Modal */}
-        {showBarcodeModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
-              <h3 className="text-xl font-bold mb-6">Scan Product Barcode</h3>
-              
-              {!isScanning && !foundProduct && (
-                <div className="text-center space-y-4">
-                  <div className="w-24 h-24 mx-auto bg-gray-100 rounded-2xl flex items-center justify-center">
-                    <Scan className="w-12 h-12 text-gray-400" />
-                  </div>
-                  <p className="text-gray-600">
-                    Point your camera at a product barcode to automatically populate product information.
-                  </p>
-                  <button
-                    onClick={simulateBarcodeSearch}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-medium"
-                  >
-                    Start Scanning
-                  </button>
-                  <div className="text-sm text-gray-500">
-                    Demo Mode: Will find "Organic Whole Milk"
-                  </div>
+        <!-- Kitchen Content (Hidden initially) -->
+        <div id="kitchen-content" class="p-6 hidden">
+            <!-- Add Items -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-3">Add Food</h3>
+                <div class="grid grid-cols-3 gap-3">
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl flex flex-col items-center justify-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        <span class="text-xs font-medium">Receipt</span>
+                    </button>
+                    <button class="bg-green-600 hover:bg-green-700 text-white p-3 rounded-xl flex flex-col items-center justify-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M12 12h.01m4.01 0h.01M12 12h4.01"/>
+                        </svg>
+                        <span class="text-xs font-medium">Barcode</span>
+                    </button>
+                    <button class="bg-gray-100 hover:bg-gray-200 text-gray-900 p-3 rounded-xl flex flex-col items-center justify-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        <span class="text-xs font-medium">Manual</span>
+                    </button>
                 </div>
-              )}
-              
-              {isScanning && (
-                <div className="text-center space-y-4">
-                  <div className="w-24 h-24 mx-auto bg-green-100 rounded-2xl flex items-center justify-center">
-                    <div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                  <p className="text-gray-600">Scanning for product...</p>
-                </div>
-              )}
-              
-              {foundProduct && (
-                <div className="text-center space-y-4">
-                  <div className="w-16 h-16 mx-auto bg-green-100 rounded-2xl flex items-center justify-center">
-                    <span className="text-2xl">✅</span>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900">{foundProduct.product_name}</h4>
-                    <p className="text-gray-600 text-sm">{foundProduct.brands}</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setShowBarcodeModal(false);
-                      setShowAddModal(true);
-                    }}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-medium"
-                  >
-                    Continue to Add Item
-                  </button>
-                </div>
-              )}
-              
-              <button
-                onClick={() => {
-                  setShowBarcodeModal(false);
-                  setIsScanning(false);
-                  setFoundProduct(null);
-                }}
-                className="w-full mt-4 px-4 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium"
-              >
-                Cancel
-              </button>
             </div>
-          </div>
-        )}
 
-        {/* Add Item Modal */}
-        {showAddModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
-              <h3 className="text-xl font-bold mb-6">
-                {foundProduct ? 'Complete Product Details' : 'Add New Item'}
-              </h3>
-              
-              {foundProduct && (
-                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl">
-                  <div className="text-sm text-green-800">
-                    ✅ Product info from barcode: <strong>{foundProduct.product_name}</strong>
-                  </div>
+            <!-- Fridge Section -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+                <div class="p-6 border-b border-gray-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            🗄️
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-900">Fridge</h3>
+                            <p class="text-sm text-gray-500">3 items</p>
+                        </div>
+                    </div>
                 </div>
-              )}
-              
-              <div className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Item name"
-                  value={newItem.name}
-                  onChange={(e) => setNewItem({...newItem, name: e.target.value})}
-                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="Price ($)"
-                  value={newItem.price}
-                  onChange={(e) => setNewItem({...newItem, price: e.target.value})}
-                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
-                  <input
-                    type="date"
-                    value={newItem.expiryDate}
-                    onChange={(e) => setNewItem({...newItem, expiryDate: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                
+                <div class="p-6 space-y-3">
+                    <!-- All the fridge items with their buttons -->
+                    <div class="relative bg-white p-3 border-2 border-orange-200 bg-orange-50 rounded-xl">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3 flex-1">
+                                <div class="text-xl relative">
+                                    🥛
+                                    <div class="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full"></div>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-medium text-gray-900 text-sm">Greek Yogurt</h4>
+                                    <div class="text-xs text-gray-600">2d left • $5.99</div>
+                                </div>
+                            </div>
+                            <div class="flex gap-1">
+                                <button class="bg-green-600 text-white px-2 py-1 rounded text-xs">Used</button>
+                                <button class="bg-gray-500 text-white px-2 py-1 rounded text-xs">Edit</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-              </div>
-              
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setFoundProduct(null);
-                  }}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={addItem}
-                  className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium"
-                >
-                  Add Item
-                </button>
-              </div>
             </div>
-          </div>
-        )}
-      </div>
+
+            <!-- Pantry Section -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="p-6 border-b border-gray-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            📦
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-900">Pantry</h3>
+                            <p class="text-sm text-gray-500">1 item</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div class="relative bg-white p-3 border-2 border-green-200 bg-green-50 rounded-xl">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3 flex-1">
+                                <div class="text-xl relative">
+                                    🍯
+                                    <div class="absolute -top-1 -right-1 w-2 h-2 bg-gray-400 rounded-full"></div>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-medium text-gray-900 text-sm">Pasta Sauce (Jar)</h4>
+                                    <div class="text-xs text-gray-600">300d left • $3.99</div>
+                                </div>
+                            </div>
+                            <div class="flex gap-1">
+                                <button class="bg-blue-600 text-white px-2 py-1 rounded text-xs">Open</button>
+                                <button class="bg-gray-500 text-white px-2 py-1 rounded text-xs">Edit</button>
+                            </div>
+                        </div>
+                        <div class="mt-2 p-1 bg-blue-50 rounded text-xs text-blue-800">
+                            ⚠️ Expiry date will change once opened
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-  );
-};
 
-export default FoodWasteApp;
+    <script>
+        // Simple tab switching
+        document.getElementById('dashboard-tab').addEventListener('click', function() {
+            // Switch to dashboard
+            document.getElementById('dashboard-content').classList.remove('hidden');
+            document.getElementById('kitchen-content').classList.add('hidden');
+            
+            // Update tab styles
+            document.getElementById('dashboard-tab').className = 'flex-1 py-4 text-center font-medium border-b-2 border-blue-500 text-blue-600';
+            document.getElementById('kitchen-tab').className = 'flex-1 py-4 text-center font-medium border-b-2 border-transparent text-gray-500';
+        });
 
+        document.getElementById('kitchen-tab').addEventListener('click', function() {
+            // Switch to kitchen
+            document.getElementById('dashboard-content').classList.add('hidden');
+            document.getElementById('kitchen-content').classList.remove('hidden');
+            
+            // Update tab styles
+            document.getElementById('kitchen-tab').className = 'flex-1 py-4 text-center font-medium border-b-2 border-blue-500 text-blue-600';
+            document.getElementById('dashboard-tab').className = 'flex-1 py-4 text-center font-medium border-b-2 border-transparent text-gray-500';
+        });
+
+        document.getElementById('view-kitchen-btn').addEventListener('click', function() {
+            document.getElementById('kitchen-tab').click();
+        });
+    </script>
+</body>
+</html>
