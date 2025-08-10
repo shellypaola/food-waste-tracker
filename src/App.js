@@ -309,14 +309,17 @@ const FoodWasteApp = () => {
                 <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
                   <div className="text-blue-600 text-sm font-medium mb-1">Inventory</div>
                   <div className="text-2xl font-bold text-blue-900">${totalValue.toFixed(2)}</div>
+                  <div className="text-blue-700 text-xs">Current value</div>
+                </div>
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
+                  <div className="text-red-600 text-sm font-medium mb-1">Wasted</div>
+                  <div className="text-2xl font-bold text-red-900">${wasteStats.monthlyWaste.toFixed(2)}</div>
+                  <div className="text-red-700 text-xs">This month</div>
                 </div>
                 <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4">
                   <div className="text-orange-600 text-sm font-medium mb-1">At Risk</div>
-                  <div className="text-2xl font-bold text-orange-900">{atRiskItems.length}</div>
-                </div>
-                <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
-                  <div className="text-green-600 text-sm font-medium mb-1">Saved</div>
-                  <div className="text-2xl font-bold text-green-900">${wasteStats.monthlyValueRecovered.toFixed(0)}</div>
+                  <div className="text-2xl font-bold text-orange-900">${atRiskItems.reduce((sum, item) => sum + item.price, 0).toFixed(2)}</div>
+                  <div className="text-orange-700 text-xs">About to expire</div>
                 </div>
               </div>
 
