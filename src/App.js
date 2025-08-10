@@ -62,6 +62,8 @@ const FoodWasteApp = () => {
   const [showBarcodeModal, setShowBarcodeModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showUsageModal, setShowUsageModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
   const [foundProduct, setFoundProduct] = useState(null);
@@ -130,20 +132,32 @@ const FoodWasteApp = () => {
     }
   };
 
-  const handleItemClick = (item) => {
-    const freshProduce = isFreshProduce(item.category);
-    
-    if (freshProduce || item.status === 'opened') {
+  const handleItemClick = (item, action) => {
+    if (action === 'use') {
       // Show usage percentage modal
       setSelectedItem(item);
       setShowUsageModal(true);
-    } else {
+    } else if (action === 'open') {
       // Just mark as opened for unopened pantry items
       markAsOpened(item);
+    } else if (action === 'edit') {
+      // Show edit modal
+      setEditingItem(item);
+      setShowEditModal(true);
     }
   };
 
-  const markAsOpened = (item) => {
+  const updateItem = () => {
+    if (editingItem && editingItem.name && editingItem.expiryDate && editingItem.price) {
+      setItems(items.map(i => 
+        i.id === editingItem.id 
+          ? { ...i, ...editingItem, price: parseFloat(editingItem.price) }
+          : i
+      ));
+      setShowEditModal(false);
+      setEditingItem(null);
+    }
+  };
     setItems(items.map(i => 
       i.id === item.id 
         ? { ...i, status: 'opened', openedDate: new Date().toISOString().split('T')[0] }
@@ -192,13 +206,10 @@ const FoodWasteApp = () => {
 
     return (
       <div className="relative overflow-hidden rounded-xl">
-        <div
-          className={`relative bg-white p-4 border-2 ${getStatusColor(item.daysUntilExpiry)} cursor-pointer hover:bg-gray-50 transition-colors`}
-          onClick={() => onItemClick(item)}
-        >
+        <div className={`relative bg-white p-3 border-2 ${getStatusColor(item.daysUntilExpiry)} transition-colors`}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="text-2xl relative">
+            <div className="flex items-center gap-3 flex-1">
+              <div className="text-xl relative">
                 {item.category === 'dairy' && '🥛'}
                 {item.category === 'vegetables' && '🥬'}
                 {item.category === 'meat' && '🥩'}
@@ -208,11 +219,11 @@ const FoodWasteApp = () => {
                 {item.category === 'grains' && '🍞'}
                 {item.category === 'beverages' && '🥤'}
                 
-                <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full">
+                <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full">
                   {item.status === 'opened' ? (
-                    <div className="w-3 h-3 bg-orange-500 rounded-full" title="Opened"></div>
+                    <div className="w-2 h-2 bg-orange-500 rounded-full" title="Opened"></div>
                   ) : (
-                    <div className="w-3 h-3 bg-gray-400 rounded-full" title="Unopened"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full" title="Unopened"></div>
                   )}
                 </div>
                 
@@ -222,31 +233,50 @@ const FoodWasteApp = () => {
                   </div>
                 )}
               </div>
-              <div>
-                <h4 className="font-medium text-gray-900">{item.name}</h4>
-                <div className="text-sm text-gray-600">
+              <div className="flex-1 min-w-0">
+                <h4 className="font-medium text-gray-900 text-sm truncate">{item.name}</h4>
+                <div className="text-xs text-gray-600">
                   {item.daysUntilExpiry}d left • ${item.price.toFixed(2)}
-                </div>
-                <div className="text-xs text-gray-500">
-                  {item.status === 'opened' ? 'Opened' : 'Unopened'}
                   {item.remainingPercentage < 100 && ` • ${item.remainingPercentage}% left`}
                 </div>
               </div>
             </div>
             
-            <div className="flex flex-col gap-2">
-              <div className="text-gray-400 text-xs text-center">
-                {canBeOpened && "Click to open"}
-                {canShowUsage && "Click to use"}
-              </div>
+            <div className="flex gap-1 ml-2">
+              {canBeOpened && (
+                <button
+                  onClick={() => onItemClick(item, 'open')}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium"
+                >
+                  Open
+                </button>
+              )}
+              {canShowUsage && (
+                <button
+                  onClick={() => onItemClick(item, 'use')}
+                  className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium"
+                >
+                  Used
+                </button>
+              )}
+              <button
+                onClick={() => onItemClick(item, 'edit')}
+                className="bg-gray-500 hover:bg-gray-600 text-white px-2 py-1 rounded text-xs font-medium"
+              >
+                Edit
+              </button>
             </div>
           </div>
           
-          {item.status === 'opened' && showOpenedWarning && freshProduce && (
-            <div className="mt-3 p-2 bg-orange-50 rounded-lg border border-orange-200">
-              <div className="text-xs text-orange-800">
-                ⚠️ <strong>Fresh produce expires faster once opened!</strong>
-              </div>
+          {/* Warning messages */}
+          {canBeOpened && (
+            <div className="mt-2 p-1 bg-blue-50 rounded text-xs text-blue-800">
+              ⚠️ Expiry date will change once opened
+            </div>
+          )}
+          {item.status === 'opened' && showOpenedWarning && (
+            <div className="mt-2 p-1 bg-orange-50 rounded text-xs text-orange-800">
+              ⚠️ Opened items expire faster!
             </div>
           )}
         </div>
@@ -460,6 +490,83 @@ const FoodWasteApp = () => {
             </div>
           )}
         </div>
+
+        {/* Edit Item Modal */}
+        {showEditModal && editingItem && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
+              <h3 className="text-xl font-bold mb-6">Edit Item</h3>
+              
+              <div className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="Item name"
+                  value={editingItem.name}
+                  onChange={(e) => setEditingItem({...editingItem, name: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="Price ($)"
+                  value={editingItem.price}
+                  onChange={(e) => setEditingItem({...editingItem, price: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
+                  <input
+                    type="date"
+                    value={editingItem.expiryDate}
+                    onChange={(e) => setEditingItem({...editingItem, expiryDate: e.target.value})}
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <select
+                  value={editingItem.location}
+                  onChange={(e) => setEditingItem({...editingItem, location: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="fridge">Fridge</option>
+                  <option value="freezer">Freezer</option>
+                  <option value="pantry">Pantry</option>
+                </select>
+                <select
+                  value={editingItem.category}
+                  onChange={(e) => setEditingItem({...editingItem, category: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="dairy">Dairy</option>
+                  <option value="vegetables">Vegetables</option>
+                  <option value="fruits">Fruits</option>
+                  <option value="meat">Meat</option>
+                  <option value="grains">Grains</option>
+                  <option value="condiments">Condiments</option>
+                  <option value="canned">Canned</option>
+                  <option value="beverages">Beverages</option>
+                </select>
+              </div>
+              
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingItem(null);
+                  }}
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={updateItem}
+                  className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium"
+                >
+                  Update Item
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Usage Percentage Modal */}
         {showUsageModal && selectedItem && (
