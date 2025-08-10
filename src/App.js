@@ -478,6 +478,8 @@ const FoodWasteApp = () => {
                   onChange={(e) => setNewItem({...newItem, price: e.target.value})}
                   className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
                 <input
                   type="date"
                   value={newItem.expiryDate}
