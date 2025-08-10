@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Camera, Plus, AlertTriangle, Package, Refrigerator, Scan } from 'lucide-react';
 
 const FoodWasteApp = () => {
@@ -14,7 +14,8 @@ const FoodWasteApp = () => {
       status: 'opened',
       openedDate: '2025-08-10',
       openedShelfLife: 7,
-      daysUntilExpiry: 2
+      daysUntilExpiry: 2,
+      remainingPercentage: 100
     },
     { 
       id: 2, 
@@ -24,7 +25,8 @@ const FoodWasteApp = () => {
       category: 'meat', 
       price: 12.99,
       status: 'unopened',
-      daysUntilExpiry: 3
+      daysUntilExpiry: 3,
+      remainingPercentage: 100
     },
     { 
       id: 3, 
@@ -34,17 +36,60 @@ const FoodWasteApp = () => {
       category: 'vegetables', 
       price: 3.49,
       status: 'unopened',
-      daysUntilExpiry: 3
+      daysUntilExpiry: 3,
+      remainingPercentage: 100
+    },
+    { 
+      id: 4, 
+      name: 'Pasta Sauce (Jar)', 
+      location: 'pantry', 
+      expiryDate: '2026-06-15', 
+      category: 'condiments', 
+      price: 3.99,
+      status: 'unopened',
+      daysUntilExpiry: 300,
+      remainingPercentage: 100
     }
   ]);
 
+  const [wasteStats, setWasteStats] = useState({
+    monthlyValueRecovered: 47.50,
+    monthlyWaste: 14.47,
+    totalItemsUsed: 15,
+    totalItemsWasted: 3
+  });
+
   const [showBarcodeModal, setShowBarcodeModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showUsageModal, setShowUsageModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
   const [foundProduct, setFoundProduct] = useState(null);
   const [newItem, setNewItem] = useState({
     name: '', location: 'fridge', expiryDate: '', category: 'dairy', price: ''
   });
+
+  // Helper functions
+  const isFreshProduce = (category) => {
+    return ['fruits', 'vegetables', 'dairy', 'meat'].includes(category);
+  };
+
+  const isPantryItem = (category) => {
+    return ['canned', 'condiments', 'grains', 'beverages'].includes(category);
+  };
+
+  const getStatusColor = (days) => {
+    if (days <= 1) return 'bg-red-50 border-red-200';
+    if (days <= 3) return 'bg-orange-50 border-orange-200';
+    return 'bg-green-50 border-green-200';
+  };
+
+  const getPercentageColor = (percentage) => {
+    if (percentage >= 75) return '🟢';
+    if (percentage >= 50) return '🟡';
+    if (percentage >= 25) return '🟠';
+    return '🔴';
+  };
 
   const simulateBarcodeSearch = async () => {
     setIsScanning(true);
@@ -74,13 +119,27 @@ const FoodWasteApp = () => {
         ...newItem,
         price: parseFloat(newItem.price),
         status: 'unopened',
-        daysUntilExpiry: 10
+        daysUntilExpiry: 10,
+        remainingPercentage: 100
       };
       
       setItems([...items, item]);
       setNewItem({ name: '', location: 'fridge', expiryDate: '', category: 'dairy', price: '' });
       setShowAddModal(false);
       setFoundProduct(null);
+    }
+  };
+
+  const handleItemClick = (item) => {
+    const freshProduce = isFreshProduce(item.category);
+    
+    if (freshProduce || item.status === 'opened') {
+      // Show usage percentage modal
+      setSelectedItem(item);
+      setShowUsageModal(true);
+    } else {
+      // Just mark as opened for unopened pantry items
+      markAsOpened(item);
     }
   };
 
@@ -92,63 +151,50 @@ const FoodWasteApp = () => {
     ));
   };
 
-  const markAsUsed = (item) => {
-    setItems(items.filter(i => i.id !== item.id));
+  const handleUsageSelection = (percentage) => {
+    if (!selectedItem) return;
+    
+    const usedValue = (selectedItem.price * selectedItem.remainingPercentage / 100) * (percentage / 100);
+    const remainingPercentage = selectedItem.remainingPercentage - percentage;
+    
+    if (remainingPercentage <= 0) {
+      // Item fully used - remove it
+      setItems(items.filter(i => i.id !== selectedItem.id));
+    } else {
+      // Item partially used - update it
+      setItems(items.map(i => 
+        i.id === selectedItem.id 
+          ? { 
+              ...i, 
+              remainingPercentage,
+              name: `${i.name.split(' (')[0]} (${remainingPercentage}% left)`,
+              price: (selectedItem.price * remainingPercentage / 100)
+            }
+          : i
+      ));
+    }
+    
+    // Update stats
+    setWasteStats(prev => ({
+      ...prev,
+      monthlyValueRecovered: prev.monthlyValueRecovered + usedValue,
+      totalItemsUsed: prev.totalItemsUsed + (percentage === 100 ? 1 : 0.25)
+    }));
+    
+    setShowUsageModal(false);
+    setSelectedItem(null);
   };
 
-  const markAsWasted = (item) => {
-    setItems(items.filter(i => i.id !== item.id));
-  };
-
-  const getStatusColor = (days) => {
-    if (days <= 1) return 'bg-red-50 border-red-200';
-    if (days <= 3) return 'bg-orange-50 border-orange-200';
-    return 'bg-green-50 border-green-200';
-  };
-
-  const SwipeableItemCard = ({ item, onUsed, onWasted, onMarkOpened }) => {
-    const [currentX, setCurrentX] = useState(0);
-    const [isDragging, setIsDragging] = useState(false);
-
-    const handleTouchStart = (e) => {
-      setIsDragging(true);
-    };
-
-    const handleTouchMove = (e) => {
-      if (!isDragging) return;
-      setCurrentX(e.touches[0].clientX - 200);
-    };
-
-    const handleTouchEnd = () => {
-      if (Math.abs(currentX) > 100) {
-        if (currentX > 0) {
-          onUsed(item);
-        } else {
-          onWasted(item);
-        }
-      }
-      setCurrentX(0);
-      setIsDragging(false);
-    };
+  const SwipeableItemCard = ({ item, onItemClick, showOpenedWarning = true }) => {
+    const freshProduce = isFreshProduce(item.category);
+    const canBeOpened = isPantryItem(item.category) && item.status === 'unopened';
+    const canShowUsage = freshProduce || item.status === 'opened';
 
     return (
       <div className="relative overflow-hidden rounded-xl">
-        <div className="absolute inset-0 flex">
-          <div className="flex-1 bg-green-500 flex items-center justify-start pl-4">
-            <span className="text-white font-medium">✓ Used</span>
-          </div>
-          <div className="flex-1 bg-red-500 flex items-center justify-end pr-4">
-            <span className="text-white font-medium">✗ Wasted</span>
-          </div>
-        </div>
-        
         <div
-          className={`relative bg-white p-4 border-2 ${getStatusColor(item.daysUntilExpiry)} transition-transform duration-200 cursor-pointer`}
-          style={{ transform: `translateX(${currentX}px)` }}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onClick={() => onUsed(item)}
+          className={`relative bg-white p-4 border-2 ${getStatusColor(item.daysUntilExpiry)} cursor-pointer hover:bg-gray-50 transition-colors`}
+          onClick={() => onItemClick(item)}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -156,6 +202,11 @@ const FoodWasteApp = () => {
                 {item.category === 'dairy' && '🥛'}
                 {item.category === 'vegetables' && '🥬'}
                 {item.category === 'meat' && '🥩'}
+                {item.category === 'fruits' && '🍎'}
+                {item.category === 'condiments' && '🍯'}
+                {item.category === 'canned' && '🥫'}
+                {item.category === 'grains' && '🍞'}
+                {item.category === 'beverages' && '🥤'}
                 
                 <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full">
                   {item.status === 'opened' ? (
@@ -164,35 +215,40 @@ const FoodWasteApp = () => {
                     <div className="w-3 h-3 bg-gray-400 rounded-full" title="Unopened"></div>
                   )}
                 </div>
+                
+                {item.remainingPercentage < 100 && (
+                  <div className="absolute -bottom-1 -right-1 text-xs">
+                    {getPercentageColor(item.remainingPercentage)}
+                  </div>
+                )}
               </div>
               <div>
                 <h4 className="font-medium text-gray-900">{item.name}</h4>
                 <div className="text-sm text-gray-600">
-                  {item.daysUntilExpiry}d left
+                  {item.daysUntilExpiry}d left • ${item.price.toFixed(2)}
                 </div>
                 <div className="text-xs text-gray-500">
                   {item.status === 'opened' ? 'Opened' : 'Unopened'}
+                  {item.remainingPercentage < 100 && ` • ${item.remainingPercentage}% left`}
                 </div>
               </div>
             </div>
             
             <div className="flex flex-col gap-2">
-              {item.status === 'unopened' && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onMarkOpened(item);
-                  }}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg text-xs font-medium"
-                >
-                  Mark Opened
-                </button>
-              )}
               <div className="text-gray-400 text-xs text-center">
-                Click to use
+                {canBeOpened && "Click to open"}
+                {canShowUsage && "Click to use"}
               </div>
             </div>
           </div>
+          
+          {item.status === 'opened' && showOpenedWarning && freshProduce && (
+            <div className="mt-3 p-2 bg-orange-50 rounded-lg border border-orange-200">
+              <div className="text-xs text-orange-800">
+                ⚠️ <strong>Fresh produce expires faster once opened!</strong>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -260,7 +316,7 @@ const FoodWasteApp = () => {
                 </div>
                 <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
                   <div className="text-green-600 text-sm font-medium mb-1">Saved</div>
-                  <div className="text-2xl font-bold text-green-900">$47</div>
+                  <div className="text-2xl font-bold text-green-900">${wasteStats.monthlyValueRecovered.toFixed(0)}</div>
                 </div>
               </div>
 
@@ -289,9 +345,8 @@ const FoodWasteApp = () => {
                     <SwipeableItemCard 
                       key={item.id} 
                       item={item} 
-                      onUsed={markAsUsed} 
-                      onWasted={markAsWasted}
-                      onMarkOpened={markAsOpened}
+                      onItemClick={handleItemClick}
+                      showOpenedWarning={false}
                     />
                   ))}
                 </div>
@@ -321,7 +376,7 @@ const FoodWasteApp = () => {
           ) : (
             // Kitchen Tab
             <div className="space-y-6">
-              {/* Add Items - At top of Kitchen tab */}
+              {/* Add Items */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Add Food</h3>
                 <div className="grid grid-cols-3 gap-3">
@@ -365,16 +420,92 @@ const FoodWasteApp = () => {
                     <SwipeableItemCard 
                       key={item.id} 
                       item={item} 
-                      onUsed={markAsUsed} 
-                      onWasted={markAsWasted}
-                      onMarkOpened={markAsOpened}
+                      onItemClick={handleItemClick}
+                      showOpenedWarning={true}
                     />
                   ))}
                 </div>
               </div>
+
+              {/* Pantry Section */}
+              {items.filter(item => item.location === 'pantry').length > 0 && (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="p-6 border-b border-gray-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Package className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">Pantry</h3>
+                        <p className="text-sm text-gray-500">{items.filter(i => i.location === 'pantry').length} items</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-6 space-y-3">
+                    {items.filter(item => item.location === 'pantry').map(item => (
+                      <SwipeableItemCard 
+                        key={item.id} 
+                        item={item} 
+                        onItemClick={handleItemClick}
+                        showOpenedWarning={true}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
+
+        {/* Usage Percentage Modal */}
+        {showUsageModal && selectedItem && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
+              <h3 className="text-xl font-bold mb-2">Used {selectedItem.name}</h3>
+              <p className="text-gray-600 text-sm mb-6">How much did you use?</p>
+              
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                {[25, 50, 75, 100].map(percentage => {
+                  const usedValue = (selectedItem.price * selectedItem.remainingPercentage / 100) * (percentage / 100);
+                  const remaining = selectedItem.remainingPercentage - percentage;
+                  
+                  return (
+                    <button
+                      key={percentage}
+                      onClick={() => handleUsageSelection(percentage)}
+                      className={`p-4 rounded-xl border-2 transition-colors ${
+                        percentage === 100 
+                          ? 'border-blue-500 bg-blue-50 text-blue-900' 
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="text-2xl font-bold">{percentage}%</div>
+                      <div className="text-xs text-gray-600">
+                        ${usedValue.toFixed(2)} used
+                      </div>
+                      {remaining > 0 && (
+                        <div className="text-xs text-gray-500">
+                          {remaining}% left
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <button
+                onClick={() => {
+                  setShowUsageModal(false);
+                  setSelectedItem(null);
+                }}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Barcode Scanner Modal */}
         {showBarcodeModal && (
@@ -478,14 +609,16 @@ const FoodWasteApp = () => {
                   onChange={(e) => setNewItem({...newItem, price: e.target.value})}
                   className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-                <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
-                <input
-                  type="date"
-                  value={newItem.expiryDate}
-                  onChange={(e) => setNewItem({...newItem, expiryDate: e.target.value})}
-                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
+                  <input
+                    type="date"
+                    value={newItem.expiryDate}
+                    onChange={(e) => setNewItem({...newItem, expiryDate: e.target.value})}
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
                 </div>
+              </div>
               
               <div className="flex gap-3 mt-6">
                 <button
