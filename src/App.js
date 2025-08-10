@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Camera, Plus, AlertTriangle, Search, Archive, Package, Refrigerator, Scan } from 'lucide-react';
+import { Camera, Plus, AlertTriangle, Package, Refrigerator, Scan } from 'lucide-react';
 
 const FoodWasteApp = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
