@@ -223,6 +223,26 @@
         .add-btn-manual { background-color: #6b7280; }
         .add-btn-manual:hover { background-color: #4b5563; }
 
+        /* Section Headers */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .section-icon-fridge { background-color: #dbeafe; }
+        .section-icon-pantry { background-color: #fef3c7; }
+
         /* Items */
         .food-item {
             background: #f9fafb;
@@ -244,6 +264,10 @@
         }
 
         .food-item-content {
+            display: block;
+        }
+
+        .food-item-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -404,27 +428,6 @@
             box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
         }
 
-        .form-input.error {
-            border-color: #ef4444;
-            background-color: #fef2f2;
-        }
-
-        .form-input.error:focus {
-            border-color: #ef4444;
-            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
-        }
-
-        .error-message {
-            background-color: #fef2f2;
-            border: 1px solid #fecaca;
-            color: #dc2626;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            font-size: 14px;
-            display: none;
-        }
-
         .modal-actions {
             display: flex;
             gap: 12px;
@@ -461,6 +464,44 @@
             background-color: #059669;
         }
 
+        /* Usage Grid */
+        .usage-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .usage-btn {
+            padding: 12px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            background: white;
+        }
+
+        .usage-btn:hover {
+            border-color: #10b981;
+            background-color: #ecfdf5;
+        }
+
+        .usage-btn.selected {
+            border-color: #10b981;
+            background-color: #ecfdf5;
+        }
+
+        .usage-percentage {
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .usage-label {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
         .hidden {
             display: none !important;
         }
@@ -482,8 +523,8 @@
 
         <!-- Navigation Tabs -->
         <div class="tabs">
-            <button id="dashboard-tab" class="tab active" onclick="showDashboard()">Dashboard</button>
-            <button id="kitchen-tab" class="tab" onclick="showKitchen()">Kitchen (<span id="kitchen-count">0</span>)</button>
+            <button id="dashboard-tab" class="tab active">Dashboard</button>
+            <button id="kitchen-tab" class="tab">Kitchen (<span id="kitchen-count">0</span>)</button>
         </div>
 
         <!-- Dashboard Content -->
@@ -556,8 +597,13 @@
             <!-- Fridge Section -->
             <div class="card">
                 <div class="card-header">
-                    <h3>🧊 Fridge</h3>
-                    <p><span id="fridge-count">0</span> items</p>
+                    <div class="section-header">
+                        <div class="section-icon section-icon-fridge">🧊</div>
+                        <div>
+                            <h3>Fridge</h3>
+                            <p><span id="fridge-count">0</span> items</p>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-content" id="fridge-items">
                     <div class="empty-state">
@@ -569,8 +615,13 @@
             <!-- Pantry Section -->
             <div class="card">
                 <div class="card-header">
-                    <h3>📦 Pantry</h3>
-                    <p><span id="pantry-count">0</span> items</p>
+                    <div class="section-header">
+                        <div class="section-icon section-icon-pantry">📦</div>
+                        <div>
+                            <h3>Pantry</h3>
+                            <p><span id="pantry-count">0</span> items</p>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-content" id="pantry-items">
                     <div class="empty-state">
@@ -585,23 +636,20 @@
     <div id="manual-modal" class="modal">
         <div class="modal-content">
             <h3 class="modal-title">Add Item Manually</h3>
-            <div id="error-message" class="error-message">
-                Please fill in all required fields marked with *
-            </div>
             <div class="form-group">
-                <label class="form-label">Item Name *</label>
+                <label class="form-label">Item Name</label>
                 <input type="text" id="item-name" class="form-input" placeholder="e.g., Greek Yogurt" required>
             </div>
             <div class="form-group">
-                <label class="form-label">Cost ($) *</label>
+                <label class="form-label">Cost ($)</label>
                 <input type="number" id="item-cost" step="0.01" min="0" class="form-input" placeholder="0.00" required>
             </div>
             <div class="form-group">
-                <label class="form-label">Expiry Date *</label>
+                <label class="form-label">Expiry Date</label>
                 <input type="date" id="item-expiry" class="form-input" required>
             </div>
             <div class="form-group">
-                <label class="form-label">Location *</label>
+                <label class="form-label">Location</label>
                 <select id="item-location" class="form-input" required>
                     <option value="">Select location</option>
                     <option value="fridge">Fridge</option>
@@ -609,89 +657,340 @@
                 </select>
             </div>
             <div class="modal-actions">
-                <button type="button" class="btn-secondary" onclick="closeManualModal()">Cancel</button>
-                <button type="button" class="btn-primary" onclick="window.addManualItem()">Add Item</button>
+                <button onclick="closeManualModal()" class="btn-secondary">Cancel</button>
+                <button onclick="addManualItem()" class="btn-primary">Add Item</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Usage Modal -->
+    <div id="usage-modal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-title">Mark as Used</h3>
+            <p style="color: #6b7280; margin-bottom: 16px;">How much did you use?</p>
+            <div class="usage-grid">
+                <button class="usage-btn" data-percentage="25">
+                    <div class="usage-percentage">25%</div>
+                    <div class="usage-label">Quarter</div>
+                </button>
+                <button class="usage-btn" data-percentage="50">
+                    <div class="usage-percentage">50%</div>
+                    <div class="usage-label">Half</div>
+                </button>
+                <button class="usage-btn selected" data-percentage="100">
+                    <div class="usage-percentage">100%</div>
+                    <div class="usage-label">All</div>
+                </button>
+            </div>
+            <div class="modal-actions">
+                <button onclick="cancelUsage()" class="btn-secondary">Cancel</button>
+                <button onclick="confirmUsage()" class="btn-primary">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Expiry Modal -->
+    <div id="edit-expiry-modal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-title">Edit Expiry Date</h3>
+            <div class="form-group">
+                <label class="form-label">New Expiry Date</label>
+                <input type="date" id="edit-expiry-date" class="form-input">
+            </div>
+            <div class="modal-actions">
+                <button onclick="cancelEditExpiry()" class="btn-secondary">Cancel</button>
+                <button onclick="confirmEditExpiry()" class="btn-primary">Update</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Make sure all functions are globally accessible
-        window.addManualItem = function() {
-            // Clear previous errors
-            clearValidationErrors();
+        // Application state
+        let items = [];
+        let wastedThisMonth = 0;
+        let selectedUsageItem = null;
+        let selectedEditItem = null;
+        let selectedUsagePercentage = 100;
+
+        // Local Storage functions
+        function saveToStorage() {
+            try {
+                const data = {
+                    items: items,
+                    wastedThisMonth: wastedThisMonth,
+                    lastSaved: new Date().toISOString()
+                };
+                localStorage.setItem('freshkeeper_data', JSON.stringify(data));
+            } catch (error) {
+                console.error('Error saving to localStorage:', error);
+            }
+        }
+
+        function loadFromStorage() {
+            try {
+                const saved = localStorage.getItem('freshkeeper_data');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    items = data.items || [];
+                    wastedThisMonth = data.wastedThisMonth || 0;
+                    return true;
+                }
+            } catch (error) {
+                console.error('Error loading from localStorage:', error);
+            }
+            return false;
+        }
+
+        // Food emojis mapping
+        const foodEmojis = {
+            'milk': '🥛', 'yogurt': '🥛', 'cheese': '🧀', 'butter': '🧈',
+            'apple': '🍎', 'banana': '🍌', 'orange': '🍊', 'lemon': '🍋',
+            'carrot': '🥕', 'spinach': '🥬', 'lettuce': '🥬', 'tomato': '🍅',
+            'chicken': '🍗', 'beef': '🥩', 'fish': '🐟', 'salmon': '🐟',
+            'bread': '🍞', 'pasta': '🍝', 'rice': '🍚', 'cereal': '🥣',
+            'egg': '🥚', 'bacon': '🥓', 'sausage': '🌭',
+            'cola': '🥤', 'juice': '🧃', 'water': '💧', 'wine': '🍷',
+            'soup': '🍲', 'sauce': '🍯', 'jam': '🍯', 'honey': '🍯'
+        };
+
+        function getFoodEmoji(name) {
+            const lowerName = name.toLowerCase();
+            for (const [key, emoji] of Object.entries(foodEmojis)) {
+                if (lowerName.includes(key)) {
+                    return emoji;
+                }
+            }
+            return '🍽️';
+        }
+
+        function calculateDaysLeft(expiryDate) {
+            const today = new Date();
+            const expiry = new Date(expiryDate);
+            const diffTime = expiry - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays;
+        }
+
+        function updateKPIs() {
+            const inventory = items.filter(item => !item.used && !item.wasted).reduce((sum, item) => sum + (item.cost * (item.remainingPercentage || 100) / 100), 0);
+            const atRisk = items.filter(item => !item.used && !item.wasted && calculateDaysLeft(item.expiry) <= 3).reduce((sum, item) => sum + (item.cost * (item.remainingPercentage || 100) / 100), 0);
             
-            const name = document.getElementById('item-name').value.trim();
-            const cost = parseFloat(document.getElementById('item-cost').value);
-            const expiry = document.getElementById('item-expiry').value;
-            const location = document.getElementById('item-location').value;
+            document.getElementById('inventory-kpi').textContent = `$${inventory.toFixed(2)}`;
+            document.getElementById('wasted-kpi').textContent = `$${wastedThisMonth.toFixed(2)}`;
+            document.getElementById('at-risk-kpi').textContent = `$${atRisk.toFixed(2)}`;
+            document.getElementById('total-value').textContent = `$${inventory.toFixed(2)}`;
+        }
 
-            let hasErrors = false;
+        function updateCounts() {
+            const activeItems = items.filter(item => !item.used && !item.wasted);
+            const fridgeCount = activeItems.filter(item => item.location === 'fridge').length;
+            const pantryCount = activeItems.filter(item => item.location === 'pantry').length;
+            
+            document.getElementById('kitchen-count').textContent = activeItems.length;
+            document.getElementById('fridge-count').textContent = fridgeCount;
+            document.getElementById('pantry-count').textContent = pantryCount;
+        }
 
-            // Validate each field and mark errors
-            if (!name) {
-                markFieldError('item-name');
-                hasErrors = true;
-            }
-            if (!cost || cost <= 0) {
-                markFieldError('item-cost');
-                hasErrors = true;
-            }
-            if (!expiry) {
-                markFieldError('item-expiry');
-                hasErrors = true;
-            }
-            if (!location) {
-                markFieldError('item-location');
-                hasErrors = true;
-            }
-
-            // Show error message if there are any errors
-            if (hasErrors) {
-                showErrorMessage();
+        function renderAtRiskItems() {
+            const atRiskItems = items.filter(item => 
+                !item.used && !item.wasted && calculateDaysLeft(item.expiry) <= 3
+            );
+            
+            const container = document.getElementById('at-risk-items');
+            
+            if (atRiskItems.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">✅</div>
+                        <p>No items at risk!</p>
+                    </div>
+                `;
                 return;
             }
 
-            // All validation passed - add the item
-            addItem(name, cost, expiry, location);
-            closeManualModal();
-        };
-
-        function markFieldError(fieldId) {
-            document.getElementById(fieldId).classList.add('error');
+            container.innerHTML = atRiskItems.map(item => {
+                const daysLeft = calculateDaysLeft(item.expiry);
+                const urgencyClass = daysLeft <= 1 ? 'urgent' : 'at-risk';
+                const currentValue = (item.cost * (item.remainingPercentage || 100) / 100).toFixed(2);
+                
+                return `
+                    <div class="food-item ${urgencyClass}">
+                        <div class="food-item-content">
+                            <div class="food-item-row">
+                                <div class="food-item-left">
+                                    <span class="food-emoji">${getFoodEmoji(item.name)}</span>
+                                    <div class="food-info">
+                                        <div class="food-details">
+                                            <div class="food-name">${item.name}</div>
+                                        </div>
+                                        <div class="food-meta">${daysLeft}d left • ${currentValue}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="food-actions">
+                                <button onclick="markAsUsed(${item.id})" class="action-btn btn-used">Used</button>
+                                <button onclick="markAsWasted(${item.id})" class="action-btn btn-wasted">Wasted</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
-        function clearValidationErrors() {
-            document.getElementById('error-message').style.display = 'none';
-            ['item-name', 'item-cost', 'item-expiry', 'item-location'].forEach(id => {
-                document.getElementById(id).classList.remove('error');
+        function renderKitchenItems() {
+            const fridgeItems = items.filter(item => item.location === 'fridge' && !item.used && !item.wasted);
+            const pantryItems = items.filter(item => item.location === 'pantry' && !item.used && !item.wasted);
+            
+            // Render fridge items
+            const fridgeContainer = document.getElementById('fridge-items');
+            if (fridgeItems.length === 0) {
+                fridgeContainer.innerHTML = '<div class="empty-state"><p>No items in fridge</p></div>';
+            } else {
+                fridgeContainer.innerHTML = fridgeItems.map(item => {
+                    const daysLeft = calculateDaysLeft(item.expiry);
+                    const urgencyClass = daysLeft <= 3 ? 'at-risk' : '';
+                    const currentValue = (item.cost * (item.remainingPercentage || 100) / 100).toFixed(2);
+                    
+                    return `
+                        <div class="food-item ${urgencyClass}">
+                            <div class="food-item-content">
+                                <div class="food-item-left">
+                                    <span class="food-emoji">${getFoodEmoji(item.name)}</span>
+                                    <div class="food-info">
+                                        <div class="food-details">
+                                            <div class="food-name">${item.name}</div>
+                                        </div>
+                                        <div class="food-meta">${daysLeft}d left • ${currentValue}</div>
+                                    </div>
+                                </div>
+                                <div class="food-actions">
+                                    <button onclick="markAsUsed(${item.id})" class="action-btn btn-used">Used</button>
+                                    <button onclick="markAsWasted(${item.id})" class="action-btn btn-wasted">Wasted</button>
+                                    <button onclick="editExpiry(${item.id})" class="action-btn btn-edit">Edit</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Render pantry items
+            const pantryContainer = document.getElementById('pantry-items');
+            if (pantryItems.length === 0) {
+                pantryContainer.innerHTML = '<div class="empty-state"><p>No items in pantry</p></div>';
+            } else {
+                pantryContainer.innerHTML = pantryItems.map(item => {
+                    const daysLeft = calculateDaysLeft(item.expiry);
+                    const currentValue = (item.cost * (item.remainingPercentage || 100) / 100).toFixed(2);
+                    
+                    let buttons;
+                    if (item.opened) {
+                        buttons = `
+                            <button onclick="markAsUsed(${item.id})" class="action-btn btn-used">Used</button>
+                            <button onclick="markAsWasted(${item.id})" class="action-btn btn-wasted">Wasted</button>
+                        `;
+                    } else {
+                        buttons = `<button onclick="markAsOpened(${item.id})" class="action-btn btn-open">Open</button>`;
+                    }
+                    
+                    const noteHtml = !item.opened ? `<div class="food-note">💡 Expiry date will change once opened</div>` : '';
+                    
+                    return `
+                        <div class="food-item">
+                            <div class="food-item-content">
+                                <div class="food-item-left">
+                                    <span class="food-emoji">${getFoodEmoji(item.name)}</span>
+                                    <div class="food-info">
+                                        <div class="food-details">
+                                            <div class="food-name">${item.name}</div>
+                                        </div>
+                                        <div class="food-meta">${daysLeft}d left • ${currentValue}</div>
+                                    </div>
+                                </div>
+                                <div class="food-actions">
+                                    ${buttons}
+                                    <button onclick="editExpiry(${item.id})" class="action-btn btn-edit">Edit</button>
+                                </div>
+                            </div>
+                            ${noteHtml}
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        function addItem(name, cost, expiry, location) {
+            const newItem = {
+                id: Date.now() + Math.random(),
+                name: name.trim(),
+                cost: parseFloat(cost),
+                expiry: expiry,
+                location: location,
+                used: false,
+                wasted: false,
+                opened: location === 'fridge' ? true : false,
+                remainingPercentage: 100
+            };
+            
+            items.push(newItem);
+            updateKPIs();
+            updateCounts();
+            renderAtRiskItems();
+            renderKitchenItems();
+            saveToStorage();
+        }
+
+        function markAsUsed(itemId) {
+            selectedUsageItem = itemId;
+            selectedUsagePercentage = 100;
+            
+            // Reset usage buttons
+            document.querySelectorAll('.usage-btn').forEach(btn => {
+                btn.classList.remove('selected');
             });
+            
+            // Highlight 100% button by default
+            document.querySelector('[data-percentage="100"]').classList.add('selected');
+            
+            document.getElementById('usage-modal').classList.add('show');
         }
 
-        function showErrorMessage() {
-            document.getElementById('error-message').style.display = 'block';
+        function markAsWasted(itemId) {
+            const item = items.find(i => i.id === itemId);
+            item.wasted = true;
+            const wastedValue = item.cost * (item.remainingPercentage || 100) / 100;
+            wastedThisMonth += wastedValue;
+            
+            updateKPIs();
+            updateCounts();
+            renderAtRiskItems();
+            renderKitchenItems();
+            saveToStorage();
         }
 
-        window.closeManualModal = function() {
-            clearValidationErrors();
-            document.getElementById('manual-modal').classList.remove('show');
-            document.getElementById('item-name').value = '';
-            document.getElementById('item-cost').value = '';
-            document.getElementById('item-expiry').value = '';
-            document.getElementById('item-location').value = '';
-        };
+        function markAsOpened(itemId) {
+            const item = items.find(i => i.id === itemId);
+            item.opened = true;
+            // When opened, reduce expiry time (simulate opened items expiring faster)
+            const currentExpiry = new Date(item.expiry);
+            currentExpiry.setDate(currentExpiry.getDate() - 7); // Reduce by 7 days when opened
+            item.expiry = currentExpiry.toISOString().split('T')[0];
+            
+            renderKitchenItems();
+            renderAtRiskItems();
+            updateKPIs();
+            saveToStorage();
+        }
 
-        window.openManualModal = function() {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('item-expiry').value = today;
-            document.getElementById('manual-modal').classList.add('show');
-        };
+        function editExpiry(itemId) {
+            selectedEditItem = itemId;
+            const item = items.find(i => i.id === itemId);
+            document.getElementById('edit-expiry-date').value = item.expiry;
+            
+            document.getElementById('edit-expiry-modal').classList.add('show');
+        }
 
-        // Simple global variables
-        let items = [];
-        let wastedThisMonth = 0;
-
-        // Tab functions
+        // Tab switching
         function showDashboard() {
             document.getElementById('dashboard-content').classList.remove('hidden');
             document.getElementById('kitchen-content').classList.add('hidden');
@@ -710,6 +1009,7 @@
         function openManualModal() {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('item-expiry').value = today;
+            document.getElementById('item-expiry').min = today;
             document.getElementById('manual-modal').classList.add('show');
         }
 
@@ -722,14 +1022,10 @@
         }
 
         function addManualItem() {
-            alert('addManualItem function called!');
-            
             const name = document.getElementById('item-name').value.trim();
             const cost = parseFloat(document.getElementById('item-cost').value);
             const expiry = document.getElementById('item-expiry').value;
             const location = document.getElementById('item-location').value;
-
-            alert(`Values: ${name}, ${cost}, ${expiry}, ${location}`);
 
             if (!name) {
                 alert('Please enter an item name');
@@ -768,327 +1064,108 @@
             alert('Demo items added!');
         }
 
-        // Helper functions
+        // Usage modal functionality
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('usage-btn')) {
+                selectedUsagePercentage = parseInt(e.target.dataset.percentage);
+                
+                // Update button styles
+                document.querySelectorAll('.usage-btn').forEach(b => {
+                    b.classList.remove('selected');
+                });
+                
+                e.target.classList.add('selected');
+            }
+        });
+
+        function cancelUsage() {
+            document.getElementById('usage-modal').classList.remove('show');
+            selectedUsageItem = null;
+        }
+
+        function confirmUsage() {
+            if (selectedUsageItem) {
+                const item = items.find(i => i.id === selectedUsageItem);
+                
+                if (selectedUsagePercentage === 100) {
+                    // Used completely - mark as used, no waste
+                    item.used = true;
+                } else {
+                    // Partially used - calculate what was wasted
+                    const unusedPercentage = 100 - selectedUsagePercentage;
+                    const currentItemValue = item.cost * (item.remainingPercentage || 100) / 100;
+                    const wastedValue = currentItemValue * (unusedPercentage / 100);
+                    
+                    // Add wasted portion to total waste
+                    wastedThisMonth += wastedValue;
+                    
+                    // Update remaining percentage
+                    const newRemaining = (item.remainingPercentage || 100) * (selectedUsagePercentage / 100);
+                    item.remainingPercentage = newRemaining;
+                    
+                    // If remaining is very small, mark as used
+                    if (newRemaining < 5) {
+                        item.used = true;
+                    }
+                    
+                    console.log(`Used ${selectedUsagePercentage}% of ${item.name}`);
+                    console.log(`Wasted ${unusedPercentage}% worth ${wastedValue.toFixed(2)}`);
+                    console.log(`Remaining: ${newRemaining.toFixed(1)}%`);
+                }
+                
+                updateKPIs();
+                updateCounts();
+                renderAtRiskItems();
+                renderKitchenItems();
+                saveToStorage();
+            }
+            
+            document.getElementById('usage-modal').classList.remove('show');
+            selectedUsageItem = null;
+        }
+
+        // Edit expiry modal functionality
+        function cancelEditExpiry() {
+            document.getElementById('edit-expiry-modal').classList.remove('show');
+            selectedEditItem = null;
+        }
+
+        function confirmEditExpiry() {
+            if (selectedEditItem) {
+                const item = items.find(i => i.id === selectedEditItem);
+                const newDate = document.getElementById('edit-expiry-date').value;
+                
+                if (newDate) {
+                    item.expiry = newDate;
+                    
+                    updateKPIs();
+                    renderAtRiskItems();
+                    renderKitchenItems();
+                    saveToStorage();
+                }
+            }
+            
+            document.getElementById('edit-expiry-modal').classList.remove('show');
+            selectedEditItem = null;
+        }
+
+        // Event listeners
+        document.getElementById('dashboard-tab').addEventListener('click', showDashboard);
+        document.getElementById('kitchen-tab').addEventListener('click', showKitchen);
+
+        // Utility functions
         function getDateFromDays(days) {
             const date = new Date();
             date.setDate(date.getDate() + days);
             return date.toISOString().split('T')[0];
         }
 
-        function getFoodEmoji(name) {
-            const lowerName = name.toLowerCase();
-            if (lowerName.includes('milk')) return '🥛';
-            if (lowerName.includes('yogurt')) return '🥛';
-            if (lowerName.includes('spinach')) return '🥬';
-            if (lowerName.includes('bread')) return '🍞';
-            if (lowerName.includes('sauce')) return '🍯';
-            return '🍽️';
-        }
-
-        function calculateDaysLeft(expiryDate) {
-            const today = new Date();
-            const expiry = new Date(expiryDate);
-            const diffTime = expiry - today;
-            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        }
-
-        // Core functions
-        function addItem(name, cost, expiry, location) {
-            const newItem = {
-                id: Date.now() + Math.random(),
-                name: name,
-                cost: cost,
-                expiry: expiry,
-                location: location,
-                used: false,
-                wasted: false,
-                opened: location === 'fridge',
-                remainingPercentage: 100
-            };
-
-            items.push(newItem);
-            updateDisplay();
-            
-            // Save to localStorage
-            localStorage.setItem('freshkeeper_items', JSON.stringify(items));
-            
-            // Sync with backend for notifications
-            syncItemsWithBackend();
-        }
-
-        function updateDisplay() {
-            updateKPIs();
-            updateCounts();
-            renderAtRiskItems();
-            renderKitchenItems();
-        }
-
-        function updateKPIs() {
-            const inventory = items.filter(item => !item.used && !item.wasted).reduce((sum, item) => sum + item.cost, 0);
-            const atRisk = items.filter(item => !item.used && !item.wasted && calculateDaysLeft(item.expiry) <= 3).reduce((sum, item) => sum + item.cost, 0);
-
-            document.getElementById('inventory-kpi').textContent = `$${inventory.toFixed(2)}`;
-            document.getElementById('wasted-kpi').textContent = `$${wastedThisMonth.toFixed(2)}`;
-            document.getElementById('at-risk-kpi').textContent = `$${atRisk.toFixed(2)}`;
-            document.getElementById('total-value').textContent = `$${inventory.toFixed(2)}`;
-        }
-
-        function updateCounts() {
-            const activeItems = items.filter(item => !item.used && !item.wasted);
-            const fridgeCount = activeItems.filter(item => item.location === 'fridge').length;
-            const pantryCount = activeItems.filter(item => item.location === 'pantry').length;
-
-            document.getElementById('kitchen-count').textContent = activeItems.length;
-            document.getElementById('fridge-count').textContent = fridgeCount;
-            document.getElementById('pantry-count').textContent = pantryCount;
-        }
-
-        function renderAtRiskItems() {
-            const atRiskItems = items.filter(item => 
-                !item.used && !item.wasted && calculateDaysLeft(item.expiry) <= 3
-            );
-
-            const container = document.getElementById('at-risk-items');
-
-            if (atRiskItems.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">✅</div>
-                        <p>No items at risk!</p>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = atRiskItems.map(item => {
-                const daysLeft = calculateDaysLeft(item.expiry);
-                const urgencyClass = daysLeft <= 1 ? 'urgent' : 'at-risk';
-
-                return `
-                    <div class="food-item ${urgencyClass}">
-                        <div class="food-item-content">
-                            <div class="food-item-left">
-                                <span class="food-emoji">${getFoodEmoji(item.name)}</span>
-                                <div class="food-info">
-                                    <div class="food-details">
-                                        <div class="food-name">${item.name}</div>
-                                    </div>
-                                    <div class="food-meta">${daysLeft}d left • $${item.cost.toFixed(2)}</div>
-                                </div>
-                            </div>
-                            <div class="food-actions">
-                                <button onclick="markAsUsed(${item.id})" class="action-btn btn-used">Used</button>
-                                <button onclick="markAsWasted(${item.id})" class="action-btn btn-wasted">Wasted</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function renderKitchenItems() {
-            const fridgeItems = items.filter(item => item.location === 'fridge' && !item.used && !item.wasted);
-            const pantryItems = items.filter(item => item.location === 'pantry' && !item.used && !item.wasted);
-
-            // Render fridge items
-            const fridgeContainer = document.getElementById('fridge-items');
-            if (fridgeItems.length === 0) {
-                fridgeContainer.innerHTML = '<div class="empty-state"><p>No items in fridge</p></div>';
-            } else {
-                fridgeContainer.innerHTML = fridgeItems.map(item => {
-                    const daysLeft = calculateDaysLeft(item.expiry);
-                    const urgencyClass = daysLeft <= 3 ? 'at-risk' : '';
-
-                    return `
-                        <div class="food-item ${urgencyClass}">
-                            <div class="food-item-content">
-                                <div class="food-item-left">
-                                    <span class="food-emoji">${getFoodEmoji(item.name)}</span>
-                                    <div class="food-info">
-                                        <div class="food-details">
-                                            <div class="food-name">${item.name}</div>
-                                        </div>
-                                        <div class="food-meta">${daysLeft}d left • $${item.cost.toFixed(2)}</div>
-                                    </div>
-                                </div>
-                                <div class="food-actions">
-                                    <button onclick="markAsUsed(${item.id})" class="action-btn btn-used">Used</button>
-                                    <button onclick="markAsWasted(${item.id})" class="action-btn btn-wasted">Wasted</button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            // Render pantry items
-            const pantryContainer = document.getElementById('pantry-items');
-            if (pantryItems.length === 0) {
-                pantryContainer.innerHTML = '<div class="empty-state"><p>No items in pantry</p></div>';
-            } else {
-                pantryContainer.innerHTML = pantryItems.map(item => {
-                    const daysLeft = calculateDaysLeft(item.expiry);
-
-                    let buttons;
-                    if (item.opened) {
-                        buttons = `
-                            <button onclick="markAsUsed(${item.id})" class="action-btn btn-used">Used</button>
-                            <button onclick="markAsWasted(${item.id})" class="action-btn btn-wasted">Wasted</button>
-                        `;
-                    } else {
-                        buttons = `<button onclick="markAsOpened(${item.id})" class="action-btn btn-open">Open</button>`;
-                    }
-
-                    const noteHtml = !item.opened ? `<div class="food-note">💡 Expiry date will change once opened</div>` : '';
-
-                    return `
-                        <div class="food-item">
-                            <div class="food-item-content">
-                                <div class="food-item-left">
-                                    <span class="food-emoji">${getFoodEmoji(item.name)}</span>
-                                    <div class="food-info">
-                                        <div class="food-details">
-                                            <div class="food-name">${item.name}</div>
-                                        </div>
-                                        <div class="food-meta">${daysLeft}d left • ${item.cost.toFixed(2)}</div>
-                                    </div>
-                                </div>
-                                <div class="food-actions">
-                                    ${buttons}
-                                </div>
-                            </div>
-                            ${noteHtml}
-                        </div>
-                    `;
-                }).join('');
-            }
-        }
-
-        function markAsUsed(itemId) {
-            const item = items.find(i => i.id === itemId);
-            item.used = true;
-            updateDisplay();
-        }
-
-        function markAsWasted(itemId) {
-            const item = items.find(i => i.id === itemId);
-            item.wasted = true;
-            wastedThisMonth += item.cost;
-            updateDisplay();
-        }
-
-        function markAsOpened(itemId) {
-            const item = items.find(i => i.id === itemId);
-            item.opened = true;
-            // Reduce expiry by 7 days when opened
-            const currentExpiry = new Date(item.expiry);
-            currentExpiry.setDate(currentExpiry.getDate() - 7);
-            item.expiry = currentExpiry.toISOString().split('T')[0];
-            updateDisplay();
-        }
-
         // Initialize app
-        updateDisplay();
-
-        // Initialize push notifications
-        initializePushNotifications();
-
-        // Service Worker and Push Notification Setup
-        async function initializePushNotifications() {
-            if ('serviceWorker' in navigator && 'PushManager' in window) {
-                try {
-                    // Register service worker
-                    const registration = await navigator.serviceWorker.register('/sw.js');
-                    console.log('Service Worker registered:', registration);
-
-                    // Request notification permission
-                    const permission = await Notification.requestPermission();
-                    if (permission === 'granted') {
-                        console.log('Notification permission granted');
-                        
-                        // Subscribe to push notifications
-                        await subscribeToPush(registration);
-                    } else {
-                        console.log('Notification permission denied');
-                    }
-                } catch (error) {
-                    console.error('Service Worker registration failed:', error);
-                }
-            } else {
-                console.log('Push messaging is not supported');
-            }
-        }
-
-        async function subscribeToPush(registration) {
-            try {
-                // Public VAPID key (you'll need to generate this)
-                const publicVapidKey = 'BP8rVQg0Cp1aVXUYJOFTKT8MJP5fBzKdXQvKf5K5QoZFq8ZkTYZ8LfHHqVGzYgT8lRZzqF8mJ5YzLfHwW5P8z-E';
-                
-                const subscription = await registration.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
-                });
-
-                console.log('Push subscription:', subscription);
-
-                // Send subscription to your backend
-                await sendSubscriptionToBackend(subscription);
-            } catch (error) {
-                console.error('Failed to subscribe to push notifications:', error);
-            }
-        }
-
-        async function sendSubscriptionToBackend(subscription) {
-            try {
-                const response = await fetch('/api/subscribe', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        subscription: subscription,
-                        items: items // Send current items for monitoring
-                    })
-                });
-
-                if (response.ok) {
-                    console.log('Subscription sent to backend successfully');
-                } else {
-                    console.error('Failed to send subscription to backend');
-                }
-            } catch (error) {
-                console.error('Error sending subscription:', error);
-            }
-        }
-
-        // Helper function to convert VAPID key
-        function urlBase64ToUint8Array(base64String) {
-            const padding = '='.repeat((4 - base64String.length % 4) % 4);
-            const base64 = (base64String + padding)
-                .replace(/-/g, '+')
-                .replace(/_/g, '/');
-
-            const rawData = window.atob(base64);
-            const outputArray = new Uint8Array(rawData.length);
-
-            for (let i = 0; i < rawData.length; ++i) {
-                outputArray[i] = rawData.charCodeAt(i);
-            }
-            return outputArray;
-        }
-
-        // Update backend when items change
-        function syncItemsWithBackend() {
-            if (items.length > 0) {
-                fetch('/api/update-items', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ items: items })
-                }).catch(error => console.error('Failed to sync items:', error));
-            }
-        }
+        const dataLoaded = loadFromStorage();
+        updateKPIs();
+        updateCounts();
+        renderAtRiskItems();
+        renderKitchenItems();
     </script>
 </body>
 </html>
